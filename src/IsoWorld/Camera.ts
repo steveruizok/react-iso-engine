@@ -167,7 +167,7 @@ export class Camera {
 			maxY: backUp.y,
 			minH: leftDown.h,
 			maxH: rightDown.h,
-		} as IsoBounds
+		}
 	}
 
 	/**

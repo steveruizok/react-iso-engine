@@ -11,15 +11,25 @@ interface BlockProps {
 }
 let i = 0
 
-const colors = ['#AAA', '#888', '#777', '#444', '#222']
+const colors = {
+	grey: ['#CCC', '#AAA', '#888', '#777', '#444', '#222'],
+	yellow: ['#FFA', '#FD8', '#FA7', '#F74', '#F32'],
+}
 
 class SVGBlock extends Component<BlockProps> {
 	render() {
 		const { block, point, onMouseEnter, onClick } = this.props
+		const { x, y, z } = block.position
 
-		const { faces, edge, silhouette } = block
+		const { color, faces, edge, silhouette } = block
 
-		const key = `${block.position.x}_${block.position.y}_${block.position.z}`
+		const key = `${x}_${y}_${z}`
+
+		const selectedColor = colors[color as 'grey' | 'yellow']
+
+		// if (key === '0_0_0') {
+		// 	console.log('rendered block')
+		// }
 
 		return (
 			<g
@@ -33,7 +43,7 @@ class SVGBlock extends Component<BlockProps> {
 				onClick={onClick ? () => onClick(block) : undefined}
 			>
 				{faces.map((face, faceIndex) => {
-					let fill = colors[faceIndex]
+					let fill = selectedColor[1 + faceIndex]
 
 					return (
 						<path
@@ -46,7 +56,12 @@ class SVGBlock extends Component<BlockProps> {
 					)
 				})}
 				{edge && (
-					<path d={edge} stroke={colors[4]} fill="none" strokeWidth={0.5} />
+					<path
+						d={edge}
+						stroke={selectedColor[4]}
+						fill="none"
+						strokeWidth={0.5}
+					/>
 				)}
 				{/* <image
 					x={point.x - 20}
@@ -61,4 +76,4 @@ class SVGBlock extends Component<BlockProps> {
 	}
 }
 
-export default observer(SVGBlock)
+export default SVGBlock

@@ -1,10 +1,16 @@
 import { Point3, AdjacentBlocks } from './index'
 import { decorate, action, observable } from 'mobx'
 
+const blockOptions = {
+	color: 'grey',
+}
+
 // Block
 
 export class Block {
+	color: string
 	faces = [] as string[]
+	busy = false
 	silhouette = ''
 	outline = ''
 	edge = ''
@@ -22,9 +28,10 @@ export class Block {
 	blocksBehind: Block[] = []
 	blocksInFront: Block[] = []
 
-	constructor(position: Point3, size: Point3) {
+	constructor(position: Point3, size: Point3, options = blockOptions) {
 		this.position = position
 		this.size = size
+		this.color = options.color
 	}
 
 	moveTo = (position: Point3) => {

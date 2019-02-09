@@ -1,4 +1,5 @@
 import { range, pull } from './utils'
+import { maxBy, sortBy } from 'lodash'
 import anime from 'animejs'
 import { decorate, action, observable } from 'mobx'
 
@@ -32,9 +33,11 @@ const defaults = {
 
 export class IsoWorld {
 	blocks: Block[]
+	sorted: Block[] = []
 	camera: Camera
 	painter: Painter
 	hovered?: Block
+	selected?: Block
 	cursor?: Block
 
 	constructor(params: IsoParams = {} as IsoParams) {
@@ -48,6 +51,12 @@ export class IsoWorld {
 		this.camera = new Camera(origin(height, width), scale)
 		this.painter = new Painter(this.camera)
 		this.blocks = blocks
+		this.sort()
+		this.render()
+	}
+
+	sort() {
+		this.sorted = this.getSorted()
 	}
 
 	/**
@@ -79,14 +88,56 @@ export class IsoWorld {
 		value: Point3,
 		duration = 360
 	) => {
+		if (block.busy) return
+		block.busy = true
+
 		anime({
 			targets: block[property],
 			easing: 'easeOutQuad',
 			duration,
-			update: () => this.renderBlock(block),
-			// complete: this.render,
+			update: () => {
+				this.renderBlock(block)
+				this.sort()
+			},
+			complete: () => {
+				block.busy = false
+			},
 			...value,
 		})
+	}
+
+	moveBlock = (
+		block: IsoBlock,
+		direction: 'north' | 'east' | 'south' | 'west'
+	) => {
+		const { x, y, z } = block.position
+		let next: Point3
+
+		switch (direction) {
+			case 'north':
+				next = { x: x + 1, y, z }
+				break
+			case 'east':
+				next = { x, y: y - 1, z }
+				break
+			case 'south':
+				next = { x: x - 1, y, z }
+				break
+			case 'west':
+				next = { x, y: y + 1, z }
+				break
+			default:
+				next = { x, y, z }
+		}
+
+		const nextBlocks = this.getBlocks(next)
+		const maxZ = maxBy(nextBlocks, (b) => b.position.z)
+		if (!maxZ) return
+		next.z = maxZ.position.z + maxZ.size.z
+
+		block.position = next
+		this.render()
+		// this.animateBlock(block, 'position', next)
 	}
 
 	/**
@@ -108,8 +159,8 @@ export class IsoWorld {
 	 * Sort and render all blocks
 	 */
 	render: () => IsoBlock[] = () => {
-		const sorted = this.sortBlocks(this.blocks)
-		return sorted.map(this.renderBlock)
+		this.sort()
+		return this.sorted.map(this.renderBlock)
 	}
 
 	/**
@@ -256,6 +307,22 @@ export class IsoWorld {
 
 			return x === px && y === py && z === pz
 		})
+	}
+
+	getBlocks = (point: Point3) => {
+		let { x, y, z } = point
+		x = Math.floor(x)
+		y = Math.floor(y)
+		z = Math.floor(z)
+
+		return sortBy(
+			this.blocks.filter((block) => {
+				const { x: px, y: py } = block.position
+
+				return x === px && y === py
+			}),
+			'position.z'
+		)
 	}
 
 	/**
